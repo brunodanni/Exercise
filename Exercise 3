@@ -1,0 +1,6 @@
+SELECT SUM(r.votes) AS total_votes
+FROM Candidates c
+JOIN Results r ON c.id = r.candidate_id
+WHERE c.gender = 'F' AND c.age < 50;
+
+-- I perform an inner join between the Candidates and Results tables using c.id = r.candidate_id to link each candidate with their respective results.
