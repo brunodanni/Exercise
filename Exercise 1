@@ -1,1 +1,46 @@
+import groovy.json.JsonOutput
 
+def projectKey = 'AFJ'
+
+// Restrict this script to only run against issues in one project
+if (issue.fields.project.key != projectKey) {
+    return
+}
+
+def author = issue.fields.creator.displayName
+
+// Add a comment to the issue
+def commentResp = post("/rest/api/2/issue/${issue.key}/comment")
+    .header('Content-Type', 'application/json')
+    .body([
+            body: """Thank you ${author} for creating a support request.
+
+We'll respond to your query within 24hrs.
+
+In the meantime, please read our documentation: http://example.com/documentation"""
+    ])
+    .asObject(Map)
+
+assert commentResp.status == 201
+
+// Define the form template payload
+def formTemplateId = "fa313a92-406a-4bbc-8725-63410e6d9d33" // Replace with your actual form template ID
+def formPayload = [
+    formTemplate: [
+        id: formTemplateId
+    ]
+]
+
+// Add the form to the issue using the Forms API
+def formApiUrl = "https://api.atlassian.com/jira/forms/cloud/9d6bcfe9-5a42-4a05-9672-731685189b3a/issue/${issue.key}/form"
+def formResp = post(formApiUrl)
+    .header('Content-Type', 'application/json')
+    .header('Accept', 'application/json')
+    .basicAuth("baltenhofen@atlassian.com", "your-api-token") // Replace with your email and API token
+    .body(JsonOutput.toJson(formPayload))
+    .asObject(Map)
+
+// Adjust assertion to expect a 200 status
+assert formResp.status == 200
+
+println "Form added successfully to issue ${issue.key}"
