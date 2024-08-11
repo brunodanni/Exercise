@@ -1,0 +1,95 @@
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.InputStreamReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
+class Result {
+    /*
+     * Complete the 'bestInGenre' function below.
+     * The function is expected to return a STRING.
+     * The function accepts STRING genre as parameter.
+     * Base URL: https://jsonmock.hackerrank.com/api/tvseries?page=
+     */
+    public static String bestInGenre(String genre) {
+        String baseUrl = "https://jsonmock.hackerrank.com/api/tvseries?page=";
+        int page = 1;        
+String bestShow = null;
+        double highestRating = 0.0;
+
+        try {
+            while (true) {
+                URL url = new URL(baseUrl + page);
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("GET");
+
+                BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                StringBuilder content = new StringBuilder();
+                String inputLine;
+
+                while ((inputLine = in.readLine()) != null) {
+                    content.append(inputLine);
+                }
+
+                // Close connections
+                in.close();
+                conn.disconnect();
+
+                // Parse JSON response using Gson
+                JsonParser parser = new JsonParser();
+                JsonObject jsonResponse = parser.parse(content.toString()).getAsJsonObject();
+                JsonArray tvSeriesArray = jsonResponse.getAsJsonArray("data");
+                int totalPages = jsonResponse.get("total_pages").getAsInt();
+
+                // Process each TV series
+                for (int i = 0; i < tvSeriesArray.size(); i++) {
+                    JsonObject tvSeries = tvSeriesArray.get(i).getAsJsonObject();
+                    String seriesGenre = tvSeries.get("genre").getAsString();
+                    double imdbRating = tvSeries.get("imdb_rating").getAsDouble();
+                    String name = tvSeries.get("name").getAsString();
+
+                    if (seriesGenre.contains(genre)) {
+                        if (imdbRating > highestRating) {
+                            highestRating = imdbRating;
+                            bestShow = name;
+                        } else if (imdbRating == highestRating && name.compareTo(bestShow) < 0) {
+                            bestShow = name;
+                        }
+                    }
+                }
+
+                // Break if we've processed all pages
+                if (page >= totalPages) {
+                    break;
+                }
+
+                page++;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return bestShow != null ? bestShow : "";
+    }
+}
+
+public class Solution {
+    public static void main(String[] args) throws IOException {
+        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(System.in));
+        BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(System.getenv("OUTPUT_PATH")));
+
+        String genre = bufferedReader.readLine();
+        String result = Result.bestInGenre(genre);
+
+        bufferedWriter.write(result);
+        bufferedWriter.newLine();
+
+        bufferedReader.close();
+        bufferedWriter.close();
+    }
+}
